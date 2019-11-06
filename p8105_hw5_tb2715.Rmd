@@ -70,8 +70,9 @@ replace_missing(iris_with_missing)
 ```
 
 
-# Problem 2
+## Problem 2
 
+# Create dataset
 ```{r}
 # create vector of file names to load using the list.files function 
 file_name <- list.files(path = "./data") %>% 
@@ -93,8 +94,10 @@ combined_df =
   tibble(file_name) %>% 
     mutate(data = map(file_name, import_data)) %>% 
       unnest()
+```
 
-#Clean dataset
+# clean dataset for easier interpretation
+```{r}
 clean_df =
 combined_df %>% 
   pivot_longer(
@@ -121,5 +124,24 @@ clean_df %>%
     x = "Week",
     y = "Observation Value"
   )
+```
+
+
+## Question 3
+```{r}
+sim_regression = function(n, beta0 = 2, beta1 = 3) {
+  
+  sim_data = tibble(
+    x = rnorm(n, mean = 1, sd = 1),
+    y = beta0 + beta1 * x + rnorm(n, 0, 1)
+  )
+  
+  ls_fit = lm(y ~ x, data = sim_data)
+  
+  tibble(
+    beta0_hat = coef(ls_fit)[1],
+    beta1_hat = coef(ls_fit)[2]
+  )
+}
 ```
 
