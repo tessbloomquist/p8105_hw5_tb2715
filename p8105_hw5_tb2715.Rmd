@@ -28,3 +28,100 @@ scale_fill_discrete = scale_fill_viridis_d
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 ```
 
+
+```{r}
+#load in iris dataset
+
+library(tidyverse)
+
+set.seed(10)
+
+iris_with_missing = iris %>% 
+  map_df(~replace(.x, sample(1:150, 20), NA)) %>%
+  mutate(Species = as.character(Species)) %>%
+  janitor::clean_names()
+```
+
+For numeric variables, you should fill in missing values with the mean of non-missing values
+For character variables, you should fill in missing values with "virginica"
+
+```{r}
+iris_with_missing %>%
+  summarise(mean_sepal_length = mean(sepal_length, na.rm = T))
+
+iris_with_missing %>%
+  summarise(mean_sepal_width = mean(sepal_width, na.rm = T))
+
+iris_with_missing %>%
+  summarise(mean_petal_length = mean(petal_length, na.rm = T))
+
+iris_with_missing %>%
+  summarise(mean_petal_width = mean(petal_width, na.rm = T))
+
+## mutate data frame to replace missing values
+
+iris_with_missing %>%
+  mutate_if(sepal_length = NA, mean_sepal_length, sepal_length)
+
+replace_missing(iris_with_missing)
+
+{
+    stop("Argument x should be numeric")
+  } else if (length(x) == 1) {
+    stop("Z scores cannot be computed for length 1 vectors")
+  }
+```
+
+
+# Problem 2
+
+```{r}
+# create vector of file names to load using the list.files function 
+file_name <- list.files(path = "./data") %>% 
+  purrr::set_names()
+
+# Iterate over file names and read in data for each subject using purrr::map and saving the result as a new variable in the dataframe
+
+import_data = function(x) {
+  df = read_csv(file = str_c("./data/", x)) %>% 
+    mutate(filename = x) %>% 
+    separate(filename, into = c("file", "remove"), sep = "\\.") %>%
+    select(-remove) %>% 
+    separate(file, into = c("arm", "subject_id"), sep = "_") 
+  df
+}
+
+# Run the load_data function on all file names saved in the filename_vector, save output as a list col in a new df called final_df
+combined_df = 
+  tibble(file_name) %>% 
+    mutate(data = map(file_name, import_data)) %>% 
+      unnest()
+
+#Clean dataset
+combined_df =
+combined_df %>% 
+  pivot_longer(
+    week_1:week_8,
+      names_to = "week", 
+      values_to = "observation"
+  ) %>%
+    mutate(arm = if_else(arm == "con", "Control", "Experimental")) %>% 
+  separate(week, into = c("header", "week"), sep = "_") %>%
+    select(-header) %>% 
+    mutate(week = as.numeric(week))
+```
+
+
+# Spaghetti Plot
+```{r}
+combined_df %>% 
+  ggplot(aes(x = week, y = observation, color = subject_id)) +
+  geom_line() +
+  facet_grid(~arm) +
+  labs(
+    title = "Observations Across Weeks by Study Arm",
+    x = "Week",
+    y = "Observation Value"
+  )
+```
+
