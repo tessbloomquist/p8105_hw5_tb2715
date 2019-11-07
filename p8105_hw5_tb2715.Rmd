@@ -50,46 +50,9 @@ complete_data = function(x) {
 }
 
 
-iris_full = map_dfr(.x = iris_with_missing, ~ complete_data(.x), .id = "input")
+iris_full = map_dfr(.x = iris_with_missing, ~ complete_data(.x))
 iris_full
 ```
-
-
-For numeric variables, you should fill in missing values with the mean of non-missing values
-For character variables, you should fill in missing values with "virginica"
-
-```{r}
-iris_with_missing %>%
-  summarise(mean_sepal_length = mean(sepal_length, na.rm = T))
-
-iris_with_missing %>%
-  summarise(mean_sepal_width = mean(sepal_width, na.rm = T))
-
-iris_with_missing %>%
-  summarise(mean_petal_length = mean(petal_length, na.rm = T))
-
-iris_with_missing %>%
-  summarise(mean_petal_width = mean(petal_width, na.rm = T))
-
-## mutate data frame to replace missing values
-
-iris_with_missing %>%
-  mutate_if(sepal_length = NA, mean_sepal_length, sepal_length)
-
-replace_missing(iris_with_missing)
-
-{
-    stop("Argument x should be numeric")
-  } else if (length(x) == 1) {
-    stop("Z scores cannot be computed for length 1 vectors")
-  }
-```
-
-
-```{r}
-
-```
-
 
 ## Problem 2
 
@@ -166,3 +129,31 @@ sim_regression = function(n, beta0 = 2, beta1 = 3) {
 }
 ```
 
+###### not useful code
+For numeric variables, you should fill in missing values with the mean of non-missing values
+For character variables, you should fill in missing values with "virginica"
+
+iris_with_missing %>%
+  summarise(mean_sepal_length = mean(sepal_length, na.rm = T))
+
+iris_with_missing %>%
+  summarise(mean_sepal_width = mean(sepal_width, na.rm = T))
+
+iris_with_missing %>%
+  summarise(mean_petal_length = mean(petal_length, na.rm = T))
+
+iris_with_missing %>%
+  summarise(mean_petal_width = mean(petal_width, na.rm = T))
+
+## mutate data frame to replace missing values
+
+iris_with_missing %>%
+  mutate_if(sepal_length = NA, mean_sepal_length, sepal_length)
+
+replace_missing(iris_with_missing)
+
+{
+    stop("Argument x should be numeric")
+  } else if (length(x) == 1) {
+    stop("Z scores cannot be computed for length 1 vectors")
+  }
