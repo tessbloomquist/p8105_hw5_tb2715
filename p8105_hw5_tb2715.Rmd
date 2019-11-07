@@ -59,10 +59,19 @@ iris_full
 # Create dataset
 ```{r}
 # create vector of file names to load using the list.files function 
-file_name <- list.files(path = "./data") %>% 
-  purrr::set_names()
+file_name <- list.files(path = "./data") 
+
+#%>% 
+  #purrr::set_names()
 
 # Iterate over file names and read in data for each subject using purrr::map and saving the result as a new variable in the dataframe
+
+import_data = function(x) {
+  df = read_csv(file = str_c("./data/", x)) %>% 
+    separate(file, into = c("arm", "subject_id"), sep = "_") 
+  df
+}
+
 
 import_data = function(x) {
   df = read_csv(file = str_c("./data/", x)) %>% 
@@ -79,6 +88,7 @@ combined_df =
     mutate(data = map(file_name, import_data)) %>% 
       unnest()
 ```
+## Create column titled "file name" that has subject ID and arm included ###
 
 # clean dataset for easier interpretation
 ```{r}
@@ -91,7 +101,7 @@ combined_df %>%
   ) %>%
     mutate(arm = if_else(arm == "con", "Control", "Experimental")) %>% 
   separate(week, into = c("header", "week"), sep = "_") %>%
-    select(-header , -file_name) %>% 
+    select(-header) %>% 
     mutate(week = as.numeric(week)) %>%
   select(subject_id, arm, week, observation)
 ```
@@ -108,8 +118,9 @@ clean_df %>%
     x = "Week",
     y = "Observation Value"
   )
-```
 
+```
+## comment on results
 
 ## Question 3
 ```{r}
@@ -120,14 +131,10 @@ sim_regression = function(n = 30, beta0 = 2, beta1 = 0, sigma_sq = 50) {
     y = beta0 + beta1 * x + rnorm(n, 0, sigma_sq)
   )
   ls_fit = lm(y~x, data = sim_data)
-   tibble(
-    beta0_hat = coef(ls_fit)[1],
-    beta1_hat = coef(ls_fit)[2]
-  )
+    tidy_fit = tidy(ls_fit)
 }
 
 output = vector("list", 10000)
-
 for (i in 1:10000) {
   output[[i]] = sim_regression()
 }
