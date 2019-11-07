@@ -119,14 +119,28 @@ sim_regression = function(n = 30, beta0 = 2, beta1 = 0, sigma_sq = 50) {
     x = rnorm(n),
     y = beta0 + beta1 * x + rnorm(n, 0, sigma_sq)
   )
-  
-  ls_fit = lm(y ~ x, data = sim_data)
-  tidy_fit = tidy(ls_fit)
+  ls_fit = lm(y~x, data = sim_data)
+   tibble(
+    beta0_hat = coef(ls_fit)[1],
+    beta1_hat = coef(ls_fit)[2]
+  )
 }
 
+output = vector("list", 10000)
 
+for (i in 1:10000) {
+  output[[i]] = sim_regression()
+}
+
+sim_results = bind_rows(output)
+```
+
+# Recalculating for different beta
+```{r}
 
 ```
+
+
 
 ###### not useful code
 For numeric variables, you should fill in missing values with the mean of non-missing values
