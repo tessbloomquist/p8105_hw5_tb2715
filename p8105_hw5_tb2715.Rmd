@@ -28,7 +28,9 @@ scale_fill_discrete = scale_fill_viridis_d
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 ```
 
-# load in iris dataset
+## Problem 1
+
+# Load in Iris Database
 ```{r}
 set.seed(10)
 
@@ -94,7 +96,6 @@ combined_df %>%
     mutate(week = as.numeric(week))
 ```
 
-
 # Spaghetti Plot
 ```{r}
 clean_df %>% 
@@ -110,6 +111,8 @@ clean_df %>%
 The experimental arm, as documented by the lighter color lines in the graph tends to have higher observation values over the course of the study while the control arm remains fairly flat steady. Both arms start around the same values. By week 7, all experimental values are higher than control values. 
 
 ## Question 3
+
+
 ```{r}
 sim_regression = function(n = 30, beta0 = 2, beta1 = 0, sigma_sq = 50) {
   
