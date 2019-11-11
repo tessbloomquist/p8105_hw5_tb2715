@@ -55,57 +55,16 @@ iris_full = map_dfr(.x = iris_with_missing, ~ complete_data(.x))
 iris_full
 ```
 
+In the first dataset, "iris_with_missing", there is missing petal_width for the fourth observation. After applying a function to the dataset there is now a value in its place that represents the mean of all the petal_widths. Additionally, the 22nd observation now has a species name of virginica.
+
 ## Problem 2
-
-
-```{r}
-file_names_data = tibble(
-  subject = list.files(path = "./data/")
-  ) %>%
-  mutate(
-    file_path = str_c("./data/", subject),
-    subject_data = purrr::map(read_csv(file = file_path), file_path)
-    )
-
-subject_data_2 = cbind(file_names_data, subject_data) %>%
-  mutate(subject = str_replace(subject, ".csv", "")) %>%
-  pivot_longer(
-    week_1:week_8,
-    names_to = "week",
-    names_prefix = "week_",
-    values_to = "observations"
-    )
-
-
-
-Thank you!
-Create reply with Thank you!
-
-Got it, thanks!
-Create reply with Got it, thanks!
-
-Looks good.
-Create reply with Looks good.
-
-Are the suggestions above helpful?
-```
 
 # Create dataset
 ```{r}
 # create vector of file names to load using the list.files function 
 file_name <- list.files(path = "./data") 
 
-#%>% 
-  #purrr::set_names()
-
-# Iterate over file names and read in data for each subject using purrr::map and saving the result as a new variable in the dataframe
-
-import_data = function(x) {
-  df = read_csv(file = str_c("./data/", x)) %>% 
-    separate(file, into = c("arm", "subject_id"), sep = "_") 
-  df
-}
-
+# Iterate over file names and read in data for each subject using purrr::map
 
 import_data = function(x) {
   df = read_csv(file = str_c("./data/", x)) %>% 
@@ -116,7 +75,7 @@ import_data = function(x) {
   df
 }
 
-# Run the load_data function on all file names saved in the filename_vector, save output as a list col in a new df called final_df
+# Run the load_data function on all file names saved in the filename_vector
 combined_df = 
   tibble(file_name) %>% 
     mutate(data = map(file_name, import_data)) %>% 
@@ -133,20 +92,19 @@ combined_df %>%
       names_to = "week", 
       values_to = "observation"
   ) %>%
-    mutate(arm = if_else(arm == "con", "Control", "Experimental")) %>% 
-  separate(week, into = c("header", "week"), sep = "_") %>%
-    select(-header) %>% 
-    mutate(week = as.numeric(week)) %>%
-  select(subject_id, arm, week, observation)
+    mutate(arm = if_else(arm == "con", "Control", "Experimental"), 
+          subject = str_replace(file_name, ".csv", "")) %>% 
+   separate(week, into = c("header", "week"), sep = "_") %>%
+    select(-header, -file_name) %>% 
+    mutate(week = as.numeric(week))
 ```
 
 
 # Spaghetti Plot
 ```{r}
 clean_df %>% 
-  ggplot(aes(x = week, y = observation, color = subject_id)) +
+  ggplot(aes(x = week, y = observation, color = subject)) +
   geom_line() +
-  facet_grid(~arm) +
   labs(
     title = "Observations Across Weeks by Study Arm",
     x = "Week",
@@ -154,7 +112,7 @@ clean_df %>%
   )
 
 ```
-## comment on results
+The experimental arm, as documented by the lighter color lines in the graph tends to have higher observation values over the course of the study while the control arm remains fairly flat steady. Both arms start around the same values. By week 7, all experimental values are higher than control values. 
 
 ## Question 3
 ```{r}
@@ -164,28 +122,63 @@ sim_regression = function(n = 30, beta0 = 2, beta1 = 0, sigma_sq = 50) {
     x = rnorm(n),
     y = beta0 + beta1 * x + rnorm(n, 0, sigma_sq)
   )
-  ls_fit = lm(y~x, data = sim_data)
-    tidy_fit = tidy(ls_fit)
-}
+  ls_fit = lm(y ~ x, data = sim_data) %>% 
+    tidy() %>%
+    select(-std.error, -statistic)}
 
 sim_results = 
-  rerun(10000, sim_regression(beta1 = 0)) %>%
-  bind_rows()
+  tibble(beta1 = 0:6) %>% 
+  mutate(
+    output_lists = map(.x = beta1, ~rerun(10000, sim_regression(beta1 = .x))),
+    estimate_dfs = map(output_lists, bind_rows)) %>% 
+  select(-output_lists) %>% 
+  unnest(estimate_dfs)
 
-##for loop
-
-  #vector("list", 10000)
-for (i in 1:10000) {
-  output[[i]] = sim_regression()
-}
-
-sim_results = bind_rows(output)
 ```
 
-# Recalculating for different beta
 ```{r}
+#proportion of times null was rejected to value of B1
+sim_results %>%
+  group_by(beta1) %>%
+  summarize(n = n(),
+            prop_sig = sum(p.value < .05)/n()*100) %>%
+ggplot(aes(x = beta1, y = prop_sig)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE) + 
+  labs(x = "Value of Beta1", y = "Proportion Null Rejected")
+```
+As the Beta1 value increases, a higher proportion of the null is rejected. This increase is seen after a Beta1 value of 2. 
+
+
+```{r}
+#average estimate of beta1
+all_beta1 =
+sim_results %>%
+  mutate(average_estimate = mean(estimate)) %>%
+  ggplot(aes(x = beta1, y = average_estimate)) + 
+  geom_point() + 
+  geom_line() + 
+  labs(x = "Beta1", y = "Mean Estimate Beta1")
+
+all_beta1
+
+#average estimate of beta1 when null is rejected
+null_beta1 = 
+sim_results %>%
+  filter(p.value < .05) %>%
+  mutate(average_estimate = mean(estimate)) %>%
+  ggplot(aes(x = beta1, y = average_estimate)) + 
+  geom_point() + 
+  geom_line() + 
+  labs(x = "Beta1", y = "Mean Estimate Beta1 When Null Is Rejected")
+
+null_beta1
+
 
 ```
+THe average estimate of Beta1 compared to the true value of Beta 1 has a slope of almost 0. The mean estimate seems to match the true Beta1 value accurately. 
+
+When the null is rejected, the average beta1 estimate is much higher than when included but it still represents the data in a 0 slope fashion that captures the true beta1 value across the range of betas. 
 
 
 
@@ -217,3 +210,39 @@ replace_missing(iris_with_missing)
   } else if (length(x) == 1) {
     stop("Z scores cannot be computed for length 1 vectors")
   }
+  
+##for loop
+
+  #vector("list", 10000)
+for (i in 1:10000) {
+  output[[i]] = sim_regression()
+}
+
+sim_results = bind_rows(output)
+
+
+names_df =
+  tibble(
+  subject = list.files(path="./data")
+)
+
+file_path = "./data/"
+
+file_names = file_path %>%
+  list.files()
+
+observations_df =
+  file_names %>%
+  map_dfr(function(file_name){
+ 
+  read_csv(paste0(file_path, file_name))
+})
+
+study_data = cbind(names_df, observations_df) %>%
+ mutate(subject = str_replace(subject, ".csv", "")) %>%
+ pivot_longer(
+    week_1:week_8,
+    names_to = "week",
+    names_prefix = "week_",
+    values_to = "observations")
+
