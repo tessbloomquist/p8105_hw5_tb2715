@@ -94,6 +94,8 @@ combined_df %>%
    separate(week, into = c("header", "week"), sep = "_") %>%
     select(-header, -file_name) %>% 
     mutate(week = as.numeric(week))
+
+clean_df
 ```
 
 # Spaghetti Plot
