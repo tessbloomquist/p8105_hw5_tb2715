@@ -2,7 +2,7 @@
 title: "p8105_hw5_tb2715"
 author: "Tess"
 date: "11/5/2019"
-output: html_document
+output: github_document
 ---
 
 
@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(viridis)
-library(broom)
 
 knitr::opts_chunk$set(
 	echo = TRUE,
@@ -52,6 +51,7 @@ complete_data = function(x) {
 
 
 iris_full = map_dfr(.x = iris_with_missing, ~ complete_data(.x))
+
 iris_full
 ```
 
@@ -60,11 +60,8 @@ In the first dataset, "iris_with_missing", there is missing petal_width for the 
 ## Problem 2
 
 # Create dataset
-```{r}
-# create vector of file names to load using the list.files function 
+```{r, message = FALSE}
 file_name <- list.files(path = "./data") 
-
-# Iterate over file names and read in data for each subject using purrr::map
 
 import_data = function(x) {
   df = read_csv(file = str_c("./data/", x)) %>% 
@@ -75,13 +72,11 @@ import_data = function(x) {
   df
 }
 
-# Run the load_data function on all file names saved in the filename_vector
 combined_df = 
   tibble(file_name) %>% 
     mutate(data = map(file_name, import_data)) %>% 
       unnest()
 ```
-## Create column titled "file name" that has subject ID and arm included ###
 
 # clean dataset for easier interpretation
 ```{r}
@@ -123,7 +118,7 @@ sim_regression = function(n = 30, beta0 = 2, beta1 = 0, sigma_sq = 50) {
     y = beta0 + beta1 * x + rnorm(n, 0, sigma_sq)
   )
   ls_fit = lm(y ~ x, data = sim_data) %>% 
-    tidy() %>%
+    broom::tidy() %>%
     select(-std.error, -statistic)}
 
 sim_results = 
@@ -145,9 +140,9 @@ sim_results %>%
 ggplot(aes(x = beta1, y = prop_sig)) + 
   geom_point() + 
   geom_smooth(se = FALSE) + 
-  labs(x = "Value of Beta1", y = "Proportion Null Rejected")
+  labs(x = "Value of Beta1", y = "Proportion Null Rejected", title = "Proportion of Null rejected by Beta1")
 ```
-As the Beta1 value increases, a higher proportion of the null is rejected. This increase is seen after a Beta1 value of 2. 
+As the Beta1 value increases, a higher proportion of the null is rejected. This linear increase is seen after a Beta1 value of 2. 
 
 
 ```{r}
@@ -158,7 +153,7 @@ sim_results %>%
   ggplot(aes(x = beta1, y = average_estimate)) + 
   geom_point() + 
   geom_line() + 
-  labs(x = "Beta1", y = "Mean Estimate Beta1")
+  labs(x = "Beta1", y = "Mean Estimate Beta1", title = "Mean Beta1 vs true Beta1 for all observations")
 
 all_beta1
 
@@ -170,79 +165,16 @@ sim_results %>%
   ggplot(aes(x = beta1, y = average_estimate)) + 
   geom_point() + 
   geom_line() + 
-  labs(x = "Beta1", y = "Mean Estimate Beta1 When Null Is Rejected")
+  labs(x = "Beta1", y = "Mean Estimate Beta1 When Null Is Rejected", title = "Mean Beta1 vs true Beta1 when Null is Rejected")
 
 null_beta1
 
 
 ```
-THe average estimate of Beta1 compared to the true value of Beta 1 has a slope of almost 0. The mean estimate seems to match the true Beta1 value accurately. 
+The average estimate of Beta1 compared to the true value of Beta 1 has a slope of almost 0. The mean estimate seems to match the true Beta1 value accurately. 
 
 When the null is rejected, the average beta1 estimate is much higher than when included but it still represents the data in a 0 slope fashion that captures the true beta1 value across the range of betas. 
 
+In comparing the beta1 when null is rejected to when it is included, the average value is very different, signifying something worth investigating in more detail might be occurring for the null values. 
 
-
-###### not useful code
-For numeric variables, you should fill in missing values with the mean of non-missing values
-For character variables, you should fill in missing values with "virginica"
-
-iris_with_missing %>%
-  summarise(mean_sepal_length = mean(sepal_length, na.rm = T))
-
-iris_with_missing %>%
-  summarise(mean_sepal_width = mean(sepal_width, na.rm = T))
-
-iris_with_missing %>%
-  summarise(mean_petal_length = mean(petal_length, na.rm = T))
-
-iris_with_missing %>%
-  summarise(mean_petal_width = mean(petal_width, na.rm = T))
-
-## mutate data frame to replace missing values
-
-iris_with_missing %>%
-  mutate_if(sepal_length = NA, mean_sepal_length, sepal_length)
-
-replace_missing(iris_with_missing)
-
-{
-    stop("Argument x should be numeric")
-  } else if (length(x) == 1) {
-    stop("Z scores cannot be computed for length 1 vectors")
-  }
-  
-##for loop
-
-  #vector("list", 10000)
-for (i in 1:10000) {
-  output[[i]] = sim_regression()
-}
-
-sim_results = bind_rows(output)
-
-
-names_df =
-  tibble(
-  subject = list.files(path="./data")
-)
-
-file_path = "./data/"
-
-file_names = file_path %>%
-  list.files()
-
-observations_df =
-  file_names %>%
-  map_dfr(function(file_name){
- 
-  read_csv(paste0(file_path, file_name))
-})
-
-study_data = cbind(names_df, observations_df) %>%
- mutate(subject = str_replace(subject, ".csv", "")) %>%
- pivot_longer(
-    week_1:week_8,
-    names_to = "week",
-    names_prefix = "week_",
-    values_to = "observations")
 
